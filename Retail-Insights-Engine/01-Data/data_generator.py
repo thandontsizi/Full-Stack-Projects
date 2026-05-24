@@ -177,6 +177,65 @@ def generate_suppliers(n=10):
 
 
 # ----------------------------------------
+# Product Generator:
+# ----------------------------------------
+def generate_products(n=30):
+
+	supplier_ids = get_ids("Supplier", "supplier_id")
+
+	if not supplier_ids:
+		print("No suppliers found. Run supplier generation first.")
+		return
+
+	products = []
+
+	categories = [
+		"Electronics",
+		"Groceries",
+		"Clothing",
+		"Home",
+		"Beauty",
+		"Sports"
+	]
+
+	for _ in range(n):
+		product_name = fake.word().title()
+		category = random.choice(categories)
+
+		description = fake.sentence(nb_words=10)
+
+		unit_cost = round(random.uniform(10, 2000), 2)
+		unit_price = round(unit_cost * 1.3, 2)
+
+		supplier_id = random.choice(supplier_ids)
+
+		products.append((
+			product_name,
+			category,
+			description,
+			unit_cost,
+			unit_price,
+			supplier_id
+		))
+
+	cur.executemany("""
+		INSERT INTO Product (
+			product_name,
+			category,
+			description,
+			unit_cost,
+			unit_price,
+			supplier_id
+		)
+		VALUES (%s, %s, %s, %s, %s, %s)
+	""", products)
+
+	conn.commit()
+
+	print(f"{n} products inserted.")
+
+
+# ----------------------------------------
 # Main Pipeline:
 # ----------------------------------------
 if __name__ == "__main__":
@@ -184,6 +243,7 @@ if __name__ == "__main__":
 	generate_customers(20)
 	generate_stores(5)
 	generate_suppliers(10)
+	generate_products(30)
 
 	cur.close()
 	conn.close()
