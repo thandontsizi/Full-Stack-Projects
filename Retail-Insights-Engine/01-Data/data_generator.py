@@ -289,6 +289,84 @@ def generate_orders(n=50):
 
 	print(f"{n} orders inserted.")
 
+
+# ------------------------------------------------
+# Order_Item Generator:
+# ------------------------------------------------
+def generate_order_items(max_items_per_order=5):
+
+	order_ids = get_ids("Orders", "oreder_id")
+
+	cur.execute("""
+		SELECT
+			product_id,
+			unit_price,
+			unit_cost
+		FROM Product
+	""")
+
+	products = cur.fetchall()
+
+	if not order_ids or not products:
+		print("Missing orders or products.")
+		return
+
+	order_items = []
+
+	for order_id in order_ids:
+
+		num_items = random.randint(1, max_items_per_order)
+
+		selected_products = random.sample(
+			products,
+			min(num_items, len(products))
+		)
+
+		for produxt in selected_products:
+
+			product_id = product[0]
+			unit_price = product[1]
+			unit_cost = product[2]
+
+			quantity = random.randint(1, 5)
+
+			item_discount = round(
+				random.uniform(0, 50),
+				2
+			)
+
+			total_price = (
+				quantity * unit_price
+			) - item_discount
+
+			order_items.append((
+				order_id,
+				product_id,
+				quantity,
+				unit_price,
+				unit_cost,
+				item_discount,
+				total_price
+			))
+
+		cur.executemany("""
+			INSERT INTO Order_Item (
+				order_id,
+				product_id,
+				quantity,
+				unit_price,
+				unit_cost,
+				item_discount,
+				total_price
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s)
+		""", order_items)
+
+		conn.commit()
+
+		print(f"{len(order_items)} order items inserted.")
+
+
 # ----------------------------------------
 # Main Pipeline:
 # ----------------------------------------
