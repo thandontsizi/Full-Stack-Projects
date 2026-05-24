@@ -236,6 +236,60 @@ def generate_products(n=30):
 
 
 # ----------------------------------------
+# Order Genarator:
+# ----------------------------------------
+def generate_orders(n=50):
+
+	customer_ids = get_ids("Customer", "customer_id")
+	store_ids = get_ids("Store", "store_id")
+
+	if not customer_ids or not store_ids:
+		print("Missing customers or stores. Generate them first.")
+		return
+
+	orders = []
+
+	statuses = ["pending", "completed", "cancelled"]
+
+	for _ in range(n):
+
+		customer_id = random.choice(customer_ids)
+		store_id = random.choice(store_ids)
+
+		order_date = fake.date_time_this_year()
+
+		order_status = random.choice(statuses)
+
+		total_amount = round(random.uniform(50, 5000), 2)
+
+		shipping_address = fake.address()
+
+		orders.append((
+			customer_id,
+			store_id,
+			order_date,
+			order_status,
+			total_amount,
+			shipping_address
+		))
+
+	cur.executemany("""
+		INSERT INTO Orders (
+			customer_id,
+			store_id,
+			order_date,
+			order_status,
+			total_amount,
+			shipping_address
+		)
+		VALUES (%s, %s, %s, %s, %s, %s)
+	""", orders)
+
+	conn.commit()
+
+	print(f"{n} orders inserted.")
+
+# ----------------------------------------
 # Main Pipeline:
 # ----------------------------------------
 if __name__ == "__main__":
