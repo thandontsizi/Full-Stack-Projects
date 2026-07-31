@@ -1,4 +1,5 @@
 import random
+from decimal import Decimal
 
 import psycopg2
 from faker import Faker
@@ -54,7 +55,7 @@ def generate_customers(n=20):
 	customers = []
 
 	for _ in range(n):
-		
+
 		customers.append((
 			fake.name(),
 			fake.email(),
@@ -295,7 +296,7 @@ def generate_orders(n=50):
 # ------------------------------------------------
 def generate_order_items(max_items_per_order=5):
 
-	order_ids = get_ids("Orders", "oreder_id")
+	order_ids = get_ids("Orders", "order_id")
 
 	cur.execute("""
 		SELECT
@@ -322,7 +323,7 @@ def generate_order_items(max_items_per_order=5):
 			min(num_items, len(products))
 		)
 
-		for produxt in selected_products:
+		for product in selected_products:
 
 			product_id = product[0]
 			unit_price = product[1]
@@ -330,9 +331,8 @@ def generate_order_items(max_items_per_order=5):
 
 			quantity = random.randint(1, 5)
 
-			item_discount = round(
-				random.uniform(0, 50),
-				2
+			item_discount = Decimal(
+				str(round(random.uniform(0, 50), 2))
 			)
 
 			total_price = (
@@ -349,22 +349,165 @@ def generate_order_items(max_items_per_order=5):
 				total_price
 			))
 
-		cur.executemany("""
-			INSERT INTO Order_Item (
+	cur.executemany("""
+		INSERT INTO Order_Item (
+			order_id,
+			product_id,
+			quantity,
+			unit_price,
+			unit_cost,
+			item_discount,
+			total_price
+		)
+		VALUES (%s, %s, %s, %s, %s, %s, %s)
+	""", order_items)
+
+	conn.commit()
+
+	print(f"{len(order_items)} order items inserted.")
+
+
+# ----------------------------------------
+# Order_Total Generator:
+# ----------------------------------------
+def update_order_totals():
+
+	cur.execute("""
+		UPDATE Orders o
+		SET total_amount = sub.total
+		FROM (
+			SELECT
 				order_id,
+				SUM(total_price) AS total
+			FROM Order_Item
+			GROUP BY order_id
+		) sub
+		WHERE o.order_id = sub.order_id
+	""")
+
+	conn.commit()
+
+	print("Order totals updated.")
+
+
+# ----------------------------------------
+# Stock Generator:
+# ----------------------------------------
+def generate_stock():
+
+	cur.execute("TRUNCATE Stock RESTART IDENTITY CASCADE;")
+	conn.commit()
+
+	store_ids = get_ids("Store", "store_id")
+	product_ids = get_ids("Product", "product_id")
+
+	if not store_ids or not product_ids:
+		print("Missing stores or products.")
+		return
+
+	stock_records = []
+
+	for store_id in store_ids:
+
+		for product_id in product_ids:
+
+			quantity_on_hand = random.randint(0, 500)
+
+			reorder_level = random.randint(10, 100)
+
+			last_restock_date = fake.date_this_year()
+
+			stock_records.append((
+				store_id,
 				product_id,
-				quantity,
-				unit_price,
-				unit_cost,
-				item_discount,
-				total_price
+				quantity_on_hand,
+				reorder_level,
+				last_restock_date
+			))
+
+	cur.executemany("""
+		INSERT INTO Stock (
+			store_id,
+			product_id,
+			quantity_on_hand,
+			reorder_level,
+			last_restock_date
+		)
+		VALUES (%s, %s, %s, %s, %s)
+	""", stock_records)
+
+	conn.commit()
+
+	print(f"{len(stock_records)} stock records inserted.")
+
+
+# ----------------------------------------
+# Refund Generator:
+# ----------------------------------------
+def generate_refunds(refund_probability=0.1):
+
+	cur.execute("""
+		SELECT
+			order_item_id,
+			total_price
+		FROM Order_Item
+	""")
+
+	order_items = cur.fetchall()
+
+	if not order_items:
+		print("No order items found.")
+		return
+
+	refunds = []
+
+	refund_reasons = [
+		"Damaged item.",
+		"Wrong product.",
+		"Customer changed their mind.",
+		"Late delivery.",
+		"Defective product."
+	]
+
+	for order_item in order_items:
+
+		if random.random() < refund_probability:
+
+			order_item_id = order_item[0]
+			total_price = order_item[1]
+
+			refund_date = fake.date_this_year()
+
+			refund_amount = round(
+				min(
+					float(total_price),
+					abs(float(total_price) * random.uniform(0.3, 1.0))
+				),
+				2
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s)
-		""", order_items)
 
-		conn.commit()
+			refund_reason = random.choice(refund_reasons)
 
-		print(f"{len(order_items)} order items inserted.")
+			refunds.append((
+				order_item_id,
+				refund_date,
+				refund_amount,
+				refund_reason,
+			))
+
+	cur.executemany("""
+		INSERT INTO Refund (
+			order_item_id,
+			refund_date,
+			refund_amount,
+			refund_reason
+		)
+		VALUES (%s, %s, %s, %s)
+	""", refunds)
+
+	conn.commit()
+
+	print(f"{len(refunds)} refunds inserted.")
 
 
 # ----------------------------------------
@@ -376,6 +519,11 @@ if __name__ == "__main__":
 	generate_stores(5)
 	generate_suppliers(10)
 	generate_products(30)
+	generate_orders(50)
+	generate_order_items()
+	update_order_totals()
+	generate_stock()
+	generate_refunds()
 
 	cur.close()
 	conn.close()

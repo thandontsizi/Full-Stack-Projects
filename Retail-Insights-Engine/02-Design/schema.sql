@@ -16,12 +16,12 @@ CREATE TABLE Customer (
 	customer_id SERIAL PRIMARY KEY,
 	full_name VARCHAR(50) NOT NULL,
 	email_address VARCHAR(100) UNIQUE NOT NULL,
-	phone_number VARCHAR(20) UNIQUE NOT NULL,
+	phone_number VARCHAR(30) NOT NULL,
 	street_address VARCHAR(150),
-	city VARCHAR(50),
-	state VARCHAR(50),
-	postal_code VARCHAR(20),
-	country VARCHAR(50)
+	city VARCHAR(100),
+	state VARCHAR(100),
+	postal_code VARCHAR(50),
+	country VARCHAR(100)
 );
 
 COMMENT ON TABLE Customer IS 'Stores all customers.';
@@ -35,10 +35,10 @@ CREATE TABLE Store (
 	store_id SERIAL PRIMARY KEY,
 	store_name VARCHAR(100) NOT NULL,
 	street_address VARCHAR(150) NOT NULL,
-	city VARCHAR(50) NOT NULL,
-	state VARCHAR(50) NOT NULL,
+	city VARCHAR(100) NOT NULL,
+	state VARCHAR(100) NOT NULL,
 	postal_code VARCHAR(50) NOT NULL,
-	country VARCHAR(50) NOT NULL
+	country VARCHAR(100) NOT NULL
 );
 
 COMMENT ON TABLE Store IS 'Stores retail store information';
@@ -52,7 +52,7 @@ CREATE TABLE Customer_Store (
 	customer_store_id SERIAL PRIMARY KEY,
 	customer_id INT NOT NULL,
 	store_id INT NOT NULL,
-	loyalty_level VARCHAR(20),
+	loyalty_level VARCHAR(30),
 	join_date DATE DEFAULT CURRENT_DATE,
 
 	CONSTRAINT fk_custore_customer FOREIGN KEY (customer_id) REFERENCES Customer(customer_id),
@@ -73,13 +73,13 @@ CREATE TABLE Supplier (
 	supplier_id SERIAL PRIMARY KEY,
 	supplier_name VARCHAR(100) NOT NULL,
 	contact_full_name VARCHAR(100) NOT NULL,
-	phone_number VARCHAR(20) UNIQUE NOT NULL,
+	phone_number VARCHAR(30) NOT NULL,
 	email_address VARCHAR(100) UNIQUE,
 	street_address VARCHAR(150) NOT NULL,
-	city VARCHAR(50) NOT NULL,
-	state VARCHAR(50) NOT NULL,
-	postal_code VARCHAR(20) NOT NULL,
-	country VARCHAR(50) NOT NULL
+	city VARCHAR(100) NOT NULL,
+	state VARCHAR(100) NOT NULL,
+	postal_code VARCHAR(50) NOT NULL,
+	country VARCHAR(100) NOT NULL
 );
 
 COMMENT ON TABLE Supplier IS 'Stores supplier contact and address information.';
@@ -134,10 +134,10 @@ CREATE TABLE Order_Item (
 	order_id INT NOT NULL,
 	product_id INT NOT NULL,
 	quantity INT NOT NULL CHECK (quantity > 0),
-	unit_price NUMERIC(10, 2) NOT NULL,
-	unit_cost NUMERIC(10, 2) NOT NULL,
-	item_discount NUMERIC(10, 2) DEFAULT 0,
-	total_price NUMERIC(12, 2) GENERATED ALWAYS AS (quantity * unit_price - item_discount) STORED,
+	unit_price NUMERIC(12, 2) NOT NULL,
+	unit_cost NUMERIC(12, 2) NOT NULL,
+	item_discount NUMERIC(12, 2) DEFAULT 0,
+	total_price NUMERIC(12, 2),
 
 	CONSTRAINT fk_orderitem_order FOREIGN KEY (order_id) REFERENCES Orders(order_id),
 
@@ -156,7 +156,7 @@ CREATE TABLE Stock (
 	store_id INT NOT NULL,
 	product_id INT NOT NULL,
 	quantity_on_hand INT DEFAULT 0 CHECK (quantity_on_hand >= 0),
-	reorder_level INT DEFAULT 0 CHECK (reorder_level >= 0),
+	reorder_level INT DEFAULT 0 CHECK (reorder_level >= 0), -- Minimum stock threshold before reordering is required.
 	last_restock_date DATE,
 
 	CONSTRAINT fk_stock_store FOREIGN KEY (store_id) REFERENCES Store(store_id),
