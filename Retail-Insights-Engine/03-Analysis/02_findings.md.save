@@ -1,0 +1,40 @@
+# Retail Insights Engine:
+## Dataset Audit Findings:
+
+**Project:** Retail Insights Engine (RIE)
+**Database:** PostgreSQL
+**Audit Script:** '01_dataset_audit.sql'
+
+---
+
+# Executive Summary:
+A comprehensive audit was performed on the Retail Insights Engine dataset to evaluate data quality before any cleaning or analysis activities.
+
+The audit assessed record completeness, duplicate values, pricing inconsistency, inventory levels, referential integrity, revenue reconciliation, and refund information across all database tables.
+
+Overall, the dataset demonstrated good structural integrity. All foreign key relationships were valid, no duplicate business identifiers were detected, and no missing critical values were identified in the audited fields. The primary issue identified was a small number of order items containing negative total prices, indicating that discounts exceeded the value of the purchased items.
+
+
+---
+
+# Customer Table Audit Results:
+### Summary:
+- 300 Customer records were generated.
+- No missing email addresses were found.
+- No duplicate email addresses were detected.
+- No duplicate phone numbers were detected.
+
+### Assessment:
+```bash
+	Customer data is complete and suitable for analysis.
+```
+
+
+---
+
+# Store Table Audit Results:
+### Summary:
+- 225 store records were generated.
+- No missing store names were identified.
+
+### Assessment

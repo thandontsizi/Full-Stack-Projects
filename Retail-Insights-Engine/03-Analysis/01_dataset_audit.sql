@@ -11,17 +11,17 @@
 SELECT '==================== CUSTOMER TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of customers:
-SELECT 'Total number of customers:' AS audit_check;
-
 SELECT COUNT(*) AS total_customers
 FROM Customer;
 
--- Customers with missing email addresses:
-SELECT 'Customers with missing email addresses:' AS audit_check;
+-- Customers with missing required fields:
+SELECT 'Customers with missing required fields:' AS audit_check;
 
 SELECT *
 FROM Customer
-WHERE email_address IS NULL;
+WHERE full_name IS NULL
+	OR email_address IS NULL
+	OR phone_number IS NULL;
 
 -- Duplicate customer email addresses:
 SELECT 'Duplicate customer email addresses:' AS audit_check;
@@ -51,27 +51,50 @@ HAVING COUNT(*) > 1;
 SELECT '==================== STORE TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of stores:
-SELECT 'Total number of stores:' AS audit_check;
-
 SELECT COUNT(*) AS total_stores
 FROM Store;
 
--- Stores with missing store names:
-SELECT 'Stores with missing store names:' AS audit_check;
+-- Stores with missing required fields:
+SELECT 'Stores with missing required fields:' AS audit_check;
 
 SELECT *
 FROM Store
-WHERE store_name IS NULL;
+WHERE store_name IS NULL
+	OR street_address IS NULL
+	OR city IS NULL
+	OR state IS NULL
+	OR postal_code IS NULL
+	OR country IS NULL;
 
--- Number of stores per city:
-SELECT 'Number of stores per city:' AS audit_check;
+
+-- ----------------------------------------------------
+-- Customer_Store Table Audit:
+-- ----------------------------------------------------
+
+SELECT '=================== CUSTOMER STORE TABLE AUDIT: ===================' AS Audit_Section;
+
+-- Total number of customer store records:
+SELECT COUNT(*) AS total_customer_stores
+FROM Customer_Store;
+
+-- Customer Store records with missing required fields:
+SELECT 'Customer_Store records with missing required fields:' AS audit_check;
+
+SELECT *
+FROM Customer_Store
+WHERE customer_id IS NULL
+	OR store_id IS NULL;
+
+-- Duplicate customer-store relationships:
+SELECT 'Duplicate customer-store relationships:' AS audit_check;
 
 SELECT
-	city,
-	COUNT(*) AS total_stores
-FROM Store
-GROUP BY city
-ORDER BY total_stores DESC;
+	customer_id,
+	store_id,
+	COUNT(*) AS duplicate_count
+FROM Customer_Store
+GROUP BY customer_id, store_id
+HAVING COUNT(*) > 1;
 
 
 -- ----------------------------------------------------
@@ -81,17 +104,23 @@ ORDER BY total_stores DESC;
 SELECT '==================== SUPPLIER TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of suppliers:
-SELECT 'Total number of suppliers:' AS audit_check;
-
 SELECT COUNT(*) AS total_suppliers
 FROM Supplier;
 
--- Suppliers with missing supplier names:
-SELECT 'Suppliers with missing supplier names:' AS audit_check;
+-- Suppliers with missing required fields:
+SELECT 'Suppliers with missing required fields:' AS audit_check;
 
 SELECT *
 FROM Supplier
-WHERE supplier_name IS NULL;
+WHERE supplier_name IS NULL
+	OR contact_full_name IS NULL
+	OR phone_number IS NULL
+	OR email_address IS NULL
+	OR street_address IS NULL
+	OR city IS NULL
+	OR state IS NULL
+	OR postal_code IS NULL
+	OR country IS NULL;
 
 -- Duplicate supplier email addresses:
 SELECT 'Duplicate supplier email addresses:' AS audit_check;
@@ -111,45 +140,18 @@ HAVING COUNT(*) > 1;
 SELECT '==================== PRODUCT TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of products:
-SELECT 'Total number of products:' AS audit_check;
-
-SELECT COUNT(*) total_products
+SELECT COUNT(*) AS total_products
 FROM Product;
 
--- Products with missing product names:
-SELECT 'Products with missing product names:' AS audit_check;
+-- Products with missing required fields:
+SELECT 'Products with missing required fields:' AS audit_check;
 
 SELECT *
 FROM Product
-WHERE product_name IS NULL;
-
--- Product distribution by category:
-SELECT 'Product distribution by category:' AS audit_check;
-
-SELECT
-	category,
-	COUNT(*) AS total_products
-FROM Product
-GROUP BY category
-ORDER BY total_products DESC;
-
--- Product selling price range:
-SELECT 'Product selling price range:' AS audit_check;
-
-SELECT
-	MIN(unit_price) AS minimum_price,
-	MAX(unit_price) AS maximum_price,
-	ROUND(AVG(unit_price), 2) AS average_price
-FROM Product;
-
--- Product cost range:
-SELECT 'Product cost range:' AS audit_check;
-
-SELECT
-	MIN(unit_cost) AS minimum_cost,
-	MAX(unit_cost) AS maximum_cost,
-	ROUND(AVG(unit_cost), 2) AS average_cost
-FROM Product;
+WHERE supplier_id IS NULL
+	OR product_name IS NULL
+	OR unit_cost IS NULL
+	OR unit_price IS NULL;
 
 -- Products where selling price is below cost
 SELECT 'Products where unit price is below unit cost:' AS audit_check;
@@ -166,47 +168,24 @@ WHERE unit_price < unit_cost;
 SELECT '==================== ORDERS TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of orders:
-SELECT 'Total number of orders:' AS audit_check;
-
 SELECT COUNT(*) AS total_orders
 FROM Orders;
 
+-- Orders with missing required fields:
+SELECT 'Orders with missing required fields:' AS audit_check;
+
+SELECT *
+FROM Orders
+WHERE customer_id IS NULL
+	OR store_id IS NULL
+	OR shipping_address IS NULL;
+	
 -- Orders with negative total amounts:
 SELECT 'Orders with negative total amounts:' AS audit_check;
 
 SELECT *
 FROM Orders
 WHERE total_amount < 0;
-
--- Order distribution by status:
-SELECT 'Order distribution by status:' AS audit_check;
-
-SELECT
-	order_status,
-	COUNT(*) AS total_orders
-FROM Orders
-GROUP BY order_status
-ORDER BY total_orders DESC;
-
--- Order total range:
-SELECT 'Order total range:' AS audit_check;
-
-SELECT
-	MIN(total_amount) AS minimum_order_total,
-	MAX(total_amount) AS maximum_order_total,
-	ROUND(AVG(total_amount), 2) AS average_order_total
-FROM Orders;
-
--- Order amounts per order day:
-SELECT 'Order amounts per order day:' AS audit_check;
-
-SELECT
-	DATE(order_date) AS order_day,
-	COUNT(*) AS total_orders,
-	ROUND(SUM(total_amount), 2) AS daily_revenue
-FROM Orders
-GROUP BY order_day
-ORDER BY order_day;
 
 
 -- ----------------------------------------------------
@@ -216,10 +195,19 @@ ORDER BY order_day;
 SELECT '==================== ORDER ITEM TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of order items:
-SELECT 'Total number of order items:' AS audit_check;
-
 SELECT COUNT(*) AS total_order_items
 FROM Order_Item;
+
+-- Order items with missing required fields:
+SELECT 'Order items with missing required fields:' AS audit_check;
+
+SELECT *
+FROM Order_Item
+WHERE order_id IS NULL
+	OR product_id IS NULL
+	OR quantity IS NULL
+	OR unit_price IS NULL
+	OR unit_cost IS NULL;
 
 -- Orders with invalid quantities:
 SELECT 'Order items with invalid quantities:' AS audit_check;
@@ -242,24 +230,6 @@ SELECT *
 FROM Order_Item
 WHERE unit_price < unit_cost;
 
--- Top 10 products by units sold:
-SELECT 'Top 10 products by units sold:' AS audit_check;
-
-SELECT
-	product_id,
-	SUM(quantity) AS total_units_sold
-FROM Order_Item
-GROUP BY product_id
-ORDER BY total_units_sold DESC
-LIMIT 10;
-
--- Total sales revenue from order items:
-SELECT 'Total sales revenue from order items:' AS audit_check;
-
-SELECT
-	COALESCE(ROUND(SUM(total_price), 2), 0.00) AS total_sales_revenue
-FROM Order_Item;
-
 
 -- ----------------------------------------------------
 -- Stock Table Audit:
@@ -268,37 +238,40 @@ FROM Order_Item;
 SELECT '==================== STOCK TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of stock records:
-SELECT 'Total number of stock records:' AS audit_check;
-
 SELECT COUNT(*) AS total_stock_records
 FROM Stock;
 
--- Number of stock records below reorder level:
-SELECT 'Number of stock records below reorder level:' AS audit_check;
+-- Stock with missing required fields:
+SELECT 'Stock with missing required fields:' AS audit_check;
 
-SELECT COUNT(*) AS low_stock_records
+SELECT *
 FROM Stock
-WHERE quantity_on_hand < reorder_level;
+WHERE store_id IS NULL
+	OR product_id IS NULL
+	OR quantity_on_hand IS NULL
+	OR reorder_level IS NULL;
 
--- Low stock records by store:
-SELECT 'Low stock records by store:' AS audit_check;
+-- Stock records with negative quantities:
+SELECT 'Stock records with negative quantities:' AS audit_check;
 
 SELECT
+	product_id,
 	store_id,
-	COUNT(*) AS low_stock_records
+	quantity_on_hand
 FROM Stock
-WHERE quantity_on_hand < reorder_level
-GROUP BY store_id
-ORDER BY low_stock_records DESC;
+WHERE quantity_on_hand < 0
+ORDER BY quantity_on_hand ASC;
 
--- Stock quantity range:
-SELECT 'Stock quantity range:' AS audit_check;
+-- Stock records with negative reorder levels:
+SELECT 'Stock records with negative reorder levels:' AS audit_check;
 
 SELECT
-	MIN(quantity_on_hand) AS minimum_stock,
-	MAX(quantity_on_hand) AS maximum_stock,
-	ROUND(AVG(quantity_on_hand), 2) AS average_stock
-FROM Stock;
+	product_id,
+	store_id,
+	reorder_level
+FROM Stock
+WHERE reorder_level < 0
+ORDER BY reorder_level ASC;
 
 
 -- ----------------------------------------------------
@@ -308,10 +281,16 @@ FROM Stock;
 SELECT '==================== REFUND TABLE AUDIT: ====================' AS Audit_Section;
 
 -- Total number of refunds:
-SELECT 'Total number of refunds:' AS audit_check;
-
 SELECT COUNT(*) AS total_refunds
 FROM Refund;
+
+-- Refunds with missing required fields:
+SELECT 'Refunds with missing required fields:' AS audit_check;
+
+SELECT *
+FROM Refund
+WHERE order_item_id IS NULL
+	OR refund_amount IS NULL;
 
 -- Refunds with negative amounts:
 SELECT 'Refunds with negative amounts:' AS audit_check;
@@ -319,23 +298,6 @@ SELECT 'Refunds with negative amounts:' AS audit_check;
 SELECT *
 FROM Refund
 WHERE refund_amount < 0;
-
--- Total refund amount:
-SELECT 'Total refund amount:' AS audit_check;
-
-SELECT
-	COALESCE(ROUND(SUM(refund_amount), 2), 0.00) AS total_refund_amount
-FROM Refund;
-
--- Refund distribution by reason:
-SELECT 'Refund distribution by reason:' AS audit_check;
-
-SELECT
-	refund_reason,
-	COUNT(*) AS total_refunds
-FROM Refund
-GROUP BY refund_reason
-ORDER BY total_refunds DESC;
 
 
 -- ----------------------------------------------------
@@ -352,6 +314,24 @@ FROM Orders o
 LEFT JOIN Customer c
 ON o.customer_id = c.customer_id
 WHERE c.customer_id IS NULL;
+
+-- Orders with invalid store references:
+SELECT 'Orders with invalid store references:' AS audit_check;
+
+SELECT COUNT(*) AS orders_with_invalid_store_references
+FROM Orders o
+LEFT JOIN Store s
+ON o.store_id = s.store_id
+WHERE s.store_id IS NULL;
+
+-- Products with invalid supplier references:
+SELECT 'Products with invalid supplier references:' AS audit_check;
+
+SELECT COUNT(*) AS products_with_invalid_supplier_references
+FROM Product p
+LEFT JOIN Supplier s
+ON p.supplier_id = s.supplier_id
+WHERE s.supplier_id IS NULL;
 
 -- Order items referencing non-existent orders:
 SELECT 'Order items with invalid order references:' AS audit_check;
@@ -389,38 +369,19 @@ LEFT JOIN Order_Item oi
 ON r.order_item_id = oi.order_item_id
 WHERE oi.order_item_id IS NULL;
 
+-- Customer stores with invalid customer references:
+SELECT 'Customer stores with invalid customer references:' AS audit_check;
 
--- ----------------------------------------------------
--- Revenue and Refund Summary:
--- ----------------------------------------------------
+SELECT COUNT(*) AS customer_stores_with_invalid_customer_references
+FROM Customer_Store cs
+LEFT JOIN Customer c
+ON cs.customer_id = c.customer_id
+WHERE c.customer_id IS NULL;
 
-SELECT '==================== REVENUE AND REFUND SUMMARY: ====================' AS Summary_Section;
-
--- Gross revenue from orders:
-SELECT 'Gross revenue from orders:' AS audit_check;
-
-SELECT
-	COALESCE(ROUND(SUM(total_amount), 2), 0.00) AS gross_revenue
-FROM Orders;
-
--- Total refunds:
-SELECT 'Total refunds:' AS audit_check;
-
-SELECT
-	COALESCE(ROUND(SUM(refund_amount), 2), 0.00) AS total_refunds
-FROM Refund;
-
--- Net revenue after refunds
-SELECT 'Net revenue after refunds' AS audit_check;
-SELECT
-	ROUND(
-		(
-			SELECT COALESCE(SUM(total_amount), 0)
-			FROM Orders
-		) -
-		(
-			SELECT COALESCE(SUM(refund_amount), 0)
-			FROM Refund
-		),
-		2
-	) AS net_revenue;
+-- Customer stores with invalid store references:
+SELECT 'Customer stores with invalid store references:' AS audit_check;
+SELECT COUNT(*) AS customer_stores_with_invalid_store_references
+FROM Customer_Store cs
+LEFT JOIN Store s
+ON cs.store_id = s.store_id
+WHERE s.store_id IS NULL;
